@@ -1,0 +1,51 @@
+{
+  "activityEntities" : [
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-08-29T19:25:07Z",
+        "event" : "dataSourceCreated",
+        "id" : "A8A1DB60-DA7B-4714-8349-D06105EC5FD2",
+        "subtitle" : "train.csv",
+        "title" : "Data Source Created"
+      }
+    ],
+    "dataSourceTrainingStarted",
+    [
+      {
+        "createdDate" : "2026-08-29T19:25:24Z",
+        "event" : "dataSourceTrainingStarted",
+        "id" : "9AF56230-E476-4D0D-BEAA-44F3574FE6C0",
+        "subtitle" : "Cooking Assistant 1",
+        "title" : "Used By"
+      }
+    ],
+    "dataSourceMetrics",
+    [
+      {
+        "createdDate" : "2026-08-29T19:25:24Z",
+        "event" : "dataSourceMetrics",
+        "id" : "F064A94A-AC25-4CCC-80A5-0008ACBF28DB",
+        "subtitle" : "15 Classes, 80,000 Items",
+        "title" : "Data Summary"
+      }
+    ]
+  ],
+  "createdDate" : "2026-08-29T19:25:07Z",
+  "dataPathRelativeToProjectURL" : "../../../../Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k_all_methods_v3%202/train.csv/",
+  "dataResult" : {
+    "createdDate" : "2026-08-29T19:25:07Z",
+    "dataSourceID" : "C2F0A618-1F6A-4264-880D-EAFFBEFDD20C",
+    "dataURL" : "file:///Users/E/Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k_all_methods_v3%202/train.csv"
+  },
+  "dataURL" : "file:///Users/E/Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k_all_methods_v3%202/train.csv",
+  "experimentIDs" : [
+    "9692E27E-D076-4F52-AA12-1D68456FC756"
+  ],
+  "id" : "C2F0A618-1F6A-4264-880D-EAFFBEFDD20C",
+  "modifiedDate" : "2026-08-29T19:25:24Z",
+  "pathType" : 0,
+  "preferredFilename" : "train.csv",
+  "title" : "train.csv",
+  "version" : "1.0"
+}

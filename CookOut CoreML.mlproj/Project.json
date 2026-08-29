@@ -1,0 +1,29 @@
+{
+  "activityEntities" : [
+    "projectCreated",
+    [
+      {
+        "createdDate" : "2026-08-29T18:59:59Z",
+        "event" : "projectCreated",
+        "id" : "ADE7DC2E-7B90-4D88-A4B5-DF3BCCFC620D",
+        "subtitle" : "CookOut CoreML",
+        "title" : "Project Created"
+      }
+    ]
+  ],
+  "authorName" : "Bumblebee",
+  "createdDate" : "2026-08-29T18:59:59Z",
+  "description" : "",
+  "id" : "96E99325-D75B-46AA-9526-09D07AE076CB",
+  "license" : "",
+  "location" : "",
+  "modifiedDate" : "2026-08-29T18:59:59Z",
+  "projectName" : "CookOut CoreML",
+  "settingsEntity" : {
+    "snapshotOnExtendTraining" : true,
+    "snapshotOnResumeTraining" : false
+  },
+  "taskType" : "textClassifier",
+  "title" : "Text Classification",
+  "version" : "1.1"
+}

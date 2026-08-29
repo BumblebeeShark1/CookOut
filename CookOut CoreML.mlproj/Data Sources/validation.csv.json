@@ -1,0 +1,83 @@
+{
+  "activityEntities" : [
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-08-29T19:07:47Z",
+        "event" : "dataSourceCreated",
+        "id" : "09CD71D9-39FC-4B48-A05B-A0BADDB7D958",
+        "subtitle" : "validation.csv",
+        "title" : "Data Source Created"
+      }
+    ]
+  ],
+  "createdDate" : "2026-08-29T19:07:47Z",
+  "dataPathRelativeToProjectURL" : "../../../Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k%202/validation.csv/",
+  "dataResult" : {
+    "classesCount" : 15,
+    "createdDate" : "2026-08-29T19:07:47Z",
+    "dataAnalysis" : {
+      "classifierAnalysis" : {
+        "labelStats" : {
+          "acidity" : 666,
+          "aromatics" : 666,
+          "baking_quality" : 667,
+          "bitterness" : 667,
+          "browning" : 666,
+          "doneness" : 667,
+          "herbs_spices" : 667,
+          "moisture" : 667,
+          "richness" : 667,
+          "sauce_quality" : 667,
+          "seasoning_balance" : 666,
+          "substitution" : 667,
+          "sweetness" : 667,
+          "texture" : 667,
+          "umami" : 666
+        }
+      },
+      "issues" : [
+        {
+          "description" : "15 classes found, including sweetness, baking_quality, texture",
+          "severity" : "debug"
+        },
+        {
+          "description" : "10000 texts found, automatically creating validation set",
+          "severity" : "good"
+        },
+        {
+          "description" : "Smallest class is \"seasoning_balance\" with 666 texts",
+          "severity" : "debug"
+        },
+        {
+          "description" : "Largest class is \"sweetness\" with 667 text",
+          "severity" : "debug"
+        }
+      ],
+      "objectDetectorAnalysis" : {
+        "details" : {
+
+        }
+      },
+      "summary" : {
+        "canUseValidation" : 1,
+        "classCount" : 15,
+        "sampleCount" : 10000
+      }
+    },
+    "dataSourceID" : "177AE1D9-43FF-4F3C-9B96-DDCD7569683E",
+    "dataURL" : "file:///Users/E/Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k%202/validation.csv",
+    "itemsCount" : 10000
+  },
+  "dataURL" : "file:///Users/E/Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k%202/validation.csv",
+  "experimentIDs" : [
+    "A64E441A-DACB-457F-9328-A8F48668C323",
+    "2C9CA341-03D6-48B2-BFD2-4C1616252212"
+  ],
+  "id" : "177AE1D9-43FF-4F3C-9B96-DDCD7569683E",
+  "modifiedDate" : "2026-08-29T19:09:37Z",
+  "pathType" : 0,
+  "preferredFilename" : "validation.csv",
+  "title" : "validation.csv",
+  "version" : "1.0"
+}

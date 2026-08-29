@@ -1,0 +1,117 @@
+{
+  "activityEntities" : [
+    "dataSourceTrainingStarted",
+    [
+      {
+        "createdDate" : "2026-08-29T19:07:50Z",
+        "event" : "dataSourceTrainingStarted",
+        "id" : "E979D948-ACDF-45BA-B6BF-6FC13D590185",
+        "subtitle" : "CookOut CoreML 1",
+        "title" : "Used By"
+      },
+      {
+        "createdDate" : "2026-08-29T19:10:19Z",
+        "event" : "dataSourceTrainingStarted",
+        "id" : "A81A0CE8-E933-4EF2-B4F1-240AEE43650D",
+        "subtitle" : "CookOut CoreML 1 copy",
+        "title" : "Used By"
+      }
+    ],
+    "dataSourceMetrics",
+    [
+      {
+        "createdDate" : "2026-08-29T19:07:50Z",
+        "event" : "dataSourceMetrics",
+        "id" : "8ECFB216-30E9-433E-8C03-0068CE51A57F",
+        "subtitle" : "15 Classes, 80,000 Items",
+        "title" : "Data Summary"
+      },
+      {
+        "createdDate" : "2026-08-29T19:10:19Z",
+        "event" : "dataSourceMetrics",
+        "id" : "4CAD6986-CA0B-40E1-BB44-9E1CD64CCB0D",
+        "subtitle" : "15 Classes, 80,000 Items",
+        "title" : "Data Summary"
+      }
+    ],
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-08-29T19:07:41Z",
+        "event" : "dataSourceCreated",
+        "id" : "3D8CADA8-A6FE-4559-82D2-B9493AD9840E",
+        "subtitle" : "train.csv",
+        "title" : "Data Source Created"
+      }
+    ]
+  ],
+  "createdDate" : "2026-08-29T19:07:41Z",
+  "dataPathRelativeToProjectURL" : "../../../Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k%202/train.csv/",
+  "dataResult" : {
+    "classesCount" : 15,
+    "createdDate" : "2026-08-29T19:07:41Z",
+    "dataAnalysis" : {
+      "classifierAnalysis" : {
+        "labelStats" : {
+          "acidity" : 5334,
+          "aromatics" : 5334,
+          "baking_quality" : 5333,
+          "bitterness" : 5333,
+          "browning" : 5334,
+          "doneness" : 5333,
+          "herbs_spices" : 5333,
+          "moisture" : 5333,
+          "richness" : 5333,
+          "sauce_quality" : 5333,
+          "seasoning_balance" : 5334,
+          "substitution" : 5333,
+          "sweetness" : 5333,
+          "texture" : 5333,
+          "umami" : 5334
+        }
+      },
+      "issues" : [
+        {
+          "description" : "15 classes found, including acidity, umami, aromatics",
+          "severity" : "debug"
+        },
+        {
+          "description" : "80000 texts found, automatically creating validation set",
+          "severity" : "good"
+        },
+        {
+          "description" : "Smallest class is \"herbs_spices\" with 5333 texts",
+          "severity" : "debug"
+        },
+        {
+          "description" : "Largest class is \"acidity\" with 5334 text",
+          "severity" : "debug"
+        }
+      ],
+      "objectDetectorAnalysis" : {
+        "details" : {
+
+        }
+      },
+      "summary" : {
+        "canUseValidation" : 1,
+        "classCount" : 15,
+        "sampleCount" : 80000
+      }
+    },
+    "dataSourceID" : "F9944573-6E36-4B5F-8459-4E77CD381957",
+    "dataURL" : "file:///Users/E/Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k%202/train.csv",
+    "itemsCount" : 80000
+  },
+  "dataURL" : "file:///Users/E/Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k%202/train.csv",
+  "experimentIDs" : [
+    "A64E441A-DACB-457F-9328-A8F48668C323",
+    "2C9CA341-03D6-48B2-BFD2-4C1616252212"
+  ],
+  "id" : "F9944573-6E36-4B5F-8459-4E77CD381957",
+  "modifiedDate" : "2026-08-29T19:10:19Z",
+  "pathType" : 0,
+  "preferredFilename" : "train.csv",
+  "title" : "train.csv",
+  "version" : "1.0"
+}

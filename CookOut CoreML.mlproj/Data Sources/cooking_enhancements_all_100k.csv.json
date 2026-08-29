@@ -1,0 +1,70 @@
+{
+  "activityEntities" : [
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-08-29T19:02:27Z",
+        "event" : "dataSourceCreated",
+        "id" : "E0525189-73DA-40F0-8934-34430F549693",
+        "subtitle" : "cooking_enhancements_all_100k.csv",
+        "title" : "Data Source Created"
+      }
+    ]
+  ],
+  "createdDate" : "2026-08-29T19:02:27Z",
+  "dataPathRelativeToProjectURL" : "../../../Downloads/moms_cooking_coreml_100k%202/cooking_enhancements_all_100k.csv/",
+  "dataResult" : {
+    "classesCount" : 0,
+    "createdDate" : "2026-08-29T19:02:27Z",
+    "dataAnalysis" : {
+      "classifierAnalysis" : {
+        "labelStats" : {
+
+        }
+      },
+      "issues" : [
+        {
+          "description" : "Missing required field 'label'.",
+          "severity" : "error"
+        },
+        {
+          "description" : "Expected texts organized into folders, named for their class",
+          "severity" : "error"
+        },
+        {
+          "description" : "Expected to find folders containing texts, named for their class",
+          "severity" : "error"
+        }
+      ],
+      "objectDetectorAnalysis" : {
+        "details" : {
+
+        }
+      },
+      "summary" : {
+        "canUseValidation" : 0,
+        "classCount" : 0,
+        "sampleCount" : 0
+      }
+    },
+    "dataSourceID" : "532417D6-70E5-455C-A159-F11FB843019A",
+    "dataURL" : "file:///Users/E/Downloads/moms_cooking_coreml_100k%202/cooking_enhancements_all_100k.csv",
+    "error" : {
+      "code" : 1000,
+      "domain" : "composer.error.domain",
+      "errorType" : "error",
+      "reason" : "Missing required field 'label'."
+    },
+    "itemsCount" : 0
+  },
+  "dataURL" : "file:///Users/E/Downloads/moms_cooking_coreml_100k%202/cooking_enhancements_all_100k.csv",
+  "experimentIDs" : [
+    "A64E441A-DACB-457F-9328-A8F48668C323"
+  ],
+  "id" : "532417D6-70E5-455C-A159-F11FB843019A",
+  "modifiedDate" : "2026-08-29T19:02:30Z",
+  "pathType" : 0,
+  "preferredFilename" : "cooking_enhancements_all_100k.csv",
+  "title" : "cooking_enhancements_all_100k.csv",
+  "version" : "1.0"
+}

@@ -1,0 +1,70 @@
+{
+  "activityEntities" : [
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-08-29T19:00:15Z",
+        "event" : "dataSourceCreated",
+        "id" : "176B2EA7-5C2E-450D-B556-DDFB30AB0E1D",
+        "subtitle" : "cooking_enhancements_train.csv",
+        "title" : "Data Source Created"
+      }
+    ]
+  ],
+  "createdDate" : "2026-08-29T19:00:15Z",
+  "dataPathRelativeToProjectURL" : "../../../Downloads/moms_cooking_coreml_100k%202/cooking_enhancements_train.csv/",
+  "dataResult" : {
+    "classesCount" : 0,
+    "createdDate" : "2026-08-29T19:00:15Z",
+    "dataAnalysis" : {
+      "classifierAnalysis" : {
+        "labelStats" : {
+
+        }
+      },
+      "issues" : [
+        {
+          "description" : "Missing required field 'label'.",
+          "severity" : "error"
+        },
+        {
+          "description" : "Expected texts organized into folders, named for their class",
+          "severity" : "error"
+        },
+        {
+          "description" : "Expected to find folders containing texts, named for their class",
+          "severity" : "error"
+        }
+      ],
+      "objectDetectorAnalysis" : {
+        "details" : {
+
+        }
+      },
+      "summary" : {
+        "canUseValidation" : 0,
+        "classCount" : 0,
+        "sampleCount" : 0
+      }
+    },
+    "dataSourceID" : "8D969BF4-9D75-4A30-AF9E-CCC1890A05D7",
+    "dataURL" : "file:///Users/E/Downloads/moms_cooking_coreml_100k%202/cooking_enhancements_train.csv",
+    "error" : {
+      "code" : 1000,
+      "domain" : "composer.error.domain",
+      "errorType" : "error",
+      "reason" : "Missing required field 'label'."
+    },
+    "itemsCount" : 0
+  },
+  "dataURL" : "file:///Users/E/Downloads/moms_cooking_coreml_100k%202/cooking_enhancements_train.csv",
+  "experimentIDs" : [
+    "A64E441A-DACB-457F-9328-A8F48668C323"
+  ],
+  "id" : "8D969BF4-9D75-4A30-AF9E-CCC1890A05D7",
+  "modifiedDate" : "2026-08-29T19:02:36Z",
+  "pathType" : 0,
+  "preferredFilename" : "cooking_enhancements_train.csv",
+  "title" : "cooking_enhancements_train.csv",
+  "version" : "1.0"
+}

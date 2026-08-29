@@ -1,0 +1,31 @@
+{
+  "activityEntities" : [
+    "dataSourceCreated",
+    [
+      {
+        "createdDate" : "2026-08-29T19:25:21Z",
+        "event" : "dataSourceCreated",
+        "id" : "487B80E1-CAAD-4819-B5E5-06669F00ED9F",
+        "subtitle" : "validation.csv",
+        "title" : "Data Source Created"
+      }
+    ]
+  ],
+  "createdDate" : "2026-08-29T19:25:21Z",
+  "dataPathRelativeToProjectURL" : "../../../../Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k_all_methods_v3%202/validation.csv/",
+  "dataResult" : {
+    "createdDate" : "2026-08-29T19:25:21Z",
+    "dataSourceID" : "DE33D986-10DA-446D-B3A2-0BECE1964B63",
+    "dataURL" : "file:///Users/E/Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k_all_methods_v3%202/validation.csv"
+  },
+  "dataURL" : "file:///Users/E/Documents/Codex/2026-08-29/referenced-chatgpt-conversation-this-is-an/outputs/moms_cooking_coreml_dataset_100k_all_methods_v3%202/validation.csv",
+  "experimentIDs" : [
+    "9692E27E-D076-4F52-AA12-1D68456FC756"
+  ],
+  "id" : "DE33D986-10DA-446D-B3A2-0BECE1964B63",
+  "modifiedDate" : "2026-08-29T19:25:21Z",
+  "pathType" : 0,
+  "preferredFilename" : "validation.csv",
+  "title" : "validation.csv",
+  "version" : "1.0"
+}
