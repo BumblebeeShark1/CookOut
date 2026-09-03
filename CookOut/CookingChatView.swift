@@ -1,11 +1,22 @@
 import SwiftUI
 
 struct CookingChatView: View {
+    private enum ChatTab: Hashable { case chat, history }
+
     @Environment(\.cookOutPalette) private var palette
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     let cookbook: [CookingNote]
+    let folders: [RecipeFolder]
+    let onSaveRecipe: (CookingNote) -> Void
+    @StateObject private var historyStore = ChatHistoryStore()
     @State private var messages: [ChatMessage] = []
+    @State private var activeConversationID: UUID?
+    @State private var selectedTab: ChatTab = .chat
+    @State private var historyQuery = ""
+    @State private var showingClearHistoryConfirmation = false
+    @State private var pendingRecipeEdit: RecipeEditProposal?
+    @State private var pendingRecipeCreate: RecipeCreateProposal?
     @State private var input = ""
     @State private var isSending = false
     @State private var errorMessage: String?
@@ -22,9 +33,9 @@ struct CookingChatView: View {
         NavigationStack {
             Group {
                 if !hasKey { keySetup }
-                else { conversation }
+                else { chatTabs }
             }
-            .navigationTitle("CookOut Sous Chef")
+            .navigationTitle(selectedTab == .history && hasKey ? "CookAssistant History" : "CookAssistant")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
                 if hasKey {
@@ -36,7 +47,10 @@ struct CookingChatView: View {
                                 }
                             }
                             Divider()
-                            Button("Clear conversation", systemImage: "trash") { messages.removeAll(); errorMessage = nil }
+                            Button("New conversation", systemImage: "square.and.pencil") { startNewConversation() }
+                            if !messages.isEmpty {
+                                Button("Clear conversation", systemImage: "trash") { startNewConversation() }
+                            }
                             Button("Replace API key", systemImage: "key") { keyInput = ""; showingKeySettings = true }
                             Button("Remove API key", systemImage: "key.slash", role: .destructive) { GroqKeychain.delete(); hasKey = false }
                         } label: { Image(systemName: "ellipsis.circle") }
@@ -44,29 +58,66 @@ struct CookingChatView: View {
                 }
             }
             .sheet(isPresented: $showingKeySettings) { keyEditor }
+            .confirmationDialog("Delete all CookAssistant conversations?", isPresented: $showingClearHistoryConfirmation, titleVisibility: .visible) {
+                Button("Delete All History", role: .destructive) {
+                    historyStore.deleteAll()
+                    activeConversationID = nil
+                    messages.removeAll()
+                }
+            } message: {
+                Text("This removes the locally saved history and cannot be undone.")
+            }
+            .alert("Is it OK if CookAssistant can edit \(pendingRecipeName)?",
+                   isPresented: Binding(get: { pendingRecipeEdit != nil }, set: { if !$0 { pendingRecipeEdit = nil } }),
+                   presenting: pendingRecipeEdit) { proposal in
+                Button("Allow Edit") { apply(proposal) }
+                Button("Not Now", role: .cancel) { decline(proposal) }
+            } message: { proposal in
+                Text(proposal.summary)
+            }
+            .alert("Add \(pendingNewRecipeName) to CookOut?",
+                   isPresented: Binding(get: { pendingRecipeCreate != nil }, set: { if !$0 { pendingRecipeCreate = nil } }),
+                   presenting: pendingRecipeCreate) { proposal in
+                Button("Add Recipe") { apply(proposal) }
+                Button("Not Now", role: .cancel) { decline(proposal) }
+            } message: { proposal in
+                Text("\(proposal.summary)\n\n\(proposal.ingredients.count) ingredients · \(proposal.steps.count) steps")
+            }
+        }
+    }
+
+    private var chatTabs: some View {
+        TabView(selection: $selectedTab) {
+            conversation
+                .tabItem { Label("Chat", systemImage: "sparkles") }
+                .tag(ChatTab.chat)
+
+            history
+                .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
+                .tag(ChatTab.history)
         }
     }
 
     private var keySetup: some View {
         ZStack {
-            ZStack { palette.background(for: colorScheme); palette.softGradient }.ignoresSafeArea()
+            ZStack { palette.background(for: colorScheme); palette.ambientGradient(for: colorScheme) }.ignoresSafeArea()
             VStack(spacing: 22) {
                 ZStack {
                     Circle().fill(palette.gradient).frame(width: 96, height: 96)
                     Image(systemName: "chef.hat.fill").font(.system(size: 42)).foregroundStyle(.white)
                 }
                 VStack(spacing: 8) {
-                    Text("Meet your Sous Chef").font(.largeTitle.bold())
+                    Text("Meet CookAssistant").font(.largeTitle.bold())
                     Text("Recipe ideas, substitutions, troubleshooting, and meal inspiration—right in your cookbook.")
                         .multilineTextAlignment(.center).foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 12) {
                     setupBenefit("sparkles", "Creative cooking help")
                     setupBenefit("book.closed.fill", "Understands your saved recipes")
-                    setupBenefit("lock.shield.fill", "Key stored in this device's Keychain")
+                    setupBenefit("lock.shield.fill", keyStorageDescription)
                 }
                 Button { keyError = nil; showingKeySettings = true } label: {
-                    Label("Connect to Groq", systemImage: "bolt.fill").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
+                    Label("Connect CookAssistant", systemImage: "bolt.fill").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
                 }.buttonStyle(.borderedProminent).tint(palette.accent)
                 Text("Powered by GPT-OSS 120B").font(.caption).foregroundStyle(.tertiary)
             }.padding(28)
@@ -79,7 +130,7 @@ struct CookingChatView: View {
                 Circle().fill(.green).frame(width: 8, height: 8)
                 Image(systemName: selectedModel.symbol).foregroundStyle(palette.accent)
                 Text(selectedModel.name).font(.caption.weight(.semibold))
-                Text("• Groq Cloud").font(.caption).foregroundStyle(.secondary)
+                Text("• CookAssistant via Groq").font(.caption).foregroundStyle(.secondary)
                 Spacer()
             }.padding(.horizontal).padding(.vertical, 8).background(CookOutTheme.mint.opacity(0.10))
             ScrollViewReader { proxy in
@@ -89,7 +140,7 @@ struct CookingChatView: View {
                             VStack(spacing: 12) {
                                 Image(systemName: "chef.hat.fill").font(.system(size: 46)).foregroundStyle(CookOutTheme.orange)
                                 Text("What are we cooking?").font(.title2.bold())
-                                Text("Ask about a recipe, substitution, technique, or what to cook.").multilineTextAlignment(.center).foregroundStyle(.secondary)
+                                Text("Ask about a recipe, substitution, technique, what to cook, or tell CookAssistant to add a new recipe.").multilineTextAlignment(.center).foregroundStyle(.secondary)
                                 promptChips
                             }.padding(.top, 48)
                         }
@@ -117,7 +168,79 @@ struct CookingChatView: View {
             .padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
             .padding(.horizontal).padding(.bottom, 8)
         }
-        .background { ZStack { palette.background(for: colorScheme); palette.softGradient } }
+        .background { ZStack { palette.background(for: colorScheme); palette.ambientGradient(for: colorScheme) } }
+    }
+
+    private var filteredHistory: [ChatConversation] {
+        let search = historyQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !search.isEmpty else { return historyStore.conversations }
+        return historyStore.conversations.filter { conversation in
+            conversation.title.localizedCaseInsensitiveContains(search) ||
+                conversation.messages.contains { $0.content.localizedCaseInsensitiveContains(search) }
+        }
+    }
+
+    private var history: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Search conversations", text: $historyQuery)
+                    .textFieldStyle(.plain)
+                if !historyQuery.isEmpty {
+                    Button { historyQuery = "" } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }.buttonStyle(.plain)
+                }
+            }
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .padding()
+
+            if filteredHistory.isEmpty {
+                ContentUnavailableView(
+                    historyStore.conversations.isEmpty ? "No conversations yet" : "No matching conversations",
+                    systemImage: historyStore.conversations.isEmpty ? "bubble.left.and.bubble.right" : "magnifyingglass",
+                    description: Text(historyStore.conversations.isEmpty ? "Your CookAssistant chats will be saved here automatically." : "Try a different search.")
+                )
+            } else {
+                List {
+                    ForEach(filteredHistory) { conversation in
+                        Button { open(conversation) } label: {
+                            VStack(alignment: .leading, spacing: 7) {
+                                HStack {
+                                    Text(conversation.title).font(.headline).lineLimit(1)
+                                    Spacer()
+                                    Text(conversation.updatedAt, format: .relative(presentation: .named))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Text(conversation.preview)
+                                    .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                                Label(GroqModel(rawValue: conversation.modelRawValue)?.name ?? "CookAssistant", systemImage: "brain.head.profile")
+                                    .font(.caption2).foregroundStyle(palette.accent)
+                            }
+                            .padding(.vertical, 5)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                delete(conversation)
+                            }
+                        }
+                        .contextMenu {
+                            Button("Open", systemImage: "bubble.left") { open(conversation) }
+                            Button("Delete", systemImage: "trash", role: .destructive) { delete(conversation) }
+                        }
+                    }
+                }
+                .listStyle(.plain)
+
+                Button("Delete All History", systemImage: "trash", role: .destructive) {
+                    showingClearHistoryConfirmation = true
+                }
+                .font(.footnote).padding(.bottom, 8)
+            }
+        }
+        .background { ZStack { palette.background(for: colorScheme); palette.ambientGradient(for: colorScheme) } }
     }
 
     private var promptChips: some View {
@@ -125,6 +248,7 @@ struct CookingChatView: View {
             HStack(spacing: 10) {
                 quickPrompt("clock.fill", "30-minute meal", CookOutTheme.orange, "What can I cook in 30 minutes?")
                 quickPrompt("wand.and.sparkles", "Improve a recipe", CookOutTheme.berry, "Help me improve one of my recipes")
+                quickPrompt("plus.circle.fill", "Add a recipe", CookOutTheme.coral, "Create and add a new recipe to my cookbook")
                 quickPrompt("arrow.triangle.swap", "Substitution", CookOutTheme.mint, "Suggest a smart substitution")
             }
         }.contentMargins(.horizontal, 2)
@@ -147,7 +271,7 @@ struct CookingChatView: View {
     private var keyEditor: some View {
         NavigationStack {
             Form {
-                Section("Groq API key") {
+                Section("CookAssistant connection") {
                     SecureField("gsk_…", text: $keyInput).textContentType(.password)
                 }
                 if isTestingKey { Section { HStack { ProgressView(); Text("Testing secure connection…") } } }
@@ -174,7 +298,7 @@ struct CookingChatView: View {
         isTestingKey = true; keyError = nil
         Task {
             do {
-                _ = try await service.reply(to: [ChatMessage(role: "user", content: "Reply with OK only.")], cookbook: [], apiKey: key, model: selectedModel)
+                _ = try await service.reply(to: [ChatMessage(role: "user", content: "Reply with OK only.")], cookbook: [], folders: [], apiKey: key, model: selectedModel)
                 try GroqKeychain.save(key)
                 keyInput = ""; hasKey = true; showingKeySettings = false
             } catch { keyError = error.localizedDescription }
@@ -187,9 +311,13 @@ struct CookingChatView: View {
         guard !text.isEmpty, !isSending else { return }
         input = ""; errorMessage = nil
         messages.append(ChatMessage(role: "user", content: text))
+        saveConversation()
         isSending = true
         Task {
-            do { messages.append(ChatMessage(role: "assistant", content: try await service.reply(to: messages, cookbook: cookbook, model: selectedModel))) }
+            do {
+                handle(try await service.reply(to: messages, cookbook: cookbook, folders: folders, model: selectedModel))
+                saveConversation()
+            }
             catch { errorMessage = error.localizedDescription }
             isSending = false
         }
@@ -199,13 +327,109 @@ struct CookingChatView: View {
         guard !isSending, messages.last?.role == "user" else { return }
         errorMessage = nil; isSending = true
         Task {
-            do { messages.append(ChatMessage(role: "assistant", content: try await service.reply(to: messages, cookbook: cookbook, model: selectedModel))) }
+            do {
+                handle(try await service.reply(to: messages, cookbook: cookbook, folders: folders, model: selectedModel))
+                saveConversation()
+            }
             catch { errorMessage = error.localizedDescription }
             isSending = false
         }
     }
 
+    private func saveConversation() {
+        activeConversationID = historyStore.save(id: activeConversationID,
+                                                 messages: messages,
+                                                 modelRawValue: selectedModelRaw)
+    }
+
+    private func startNewConversation() {
+        messages.removeAll()
+        activeConversationID = nil
+        errorMessage = nil
+        input = ""
+        selectedTab = .chat
+    }
+
+    private func open(_ conversation: ChatConversation) {
+        activeConversationID = conversation.id
+        messages = conversation.messages
+        selectedModelRaw = conversation.modelRawValue
+        errorMessage = nil
+        selectedTab = .chat
+    }
+
+    private func delete(_ conversation: ChatConversation) {
+        historyStore.delete(conversation)
+        if activeConversationID == conversation.id { startNewConversation() }
+    }
+
+    private var pendingRecipeName: String {
+        guard let proposal = pendingRecipeEdit,
+              let recipe = cookbook.first(where: { $0.id == proposal.recipeID }) else { return "this recipe" }
+        return recipe.title.isEmpty ? "this recipe" : "“\(recipe.title)”"
+    }
+
+    private var pendingNewRecipeName: String {
+        let title = pendingRecipeCreate?.title.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return title.isEmpty ? "this recipe" : "“\(title)”"
+    }
+
+    private func handle(_ reply: GroqReply) {
+        messages.append(ChatMessage(role: "assistant", content: reply.content))
+        if let proposal = reply.editProposal {
+            guard cookbook.contains(where: { $0.id == proposal.recipeID }) else {
+                messages.append(ChatMessage(role: "assistant", content: "I couldn't match that edit to a saved recipe, so nothing was changed."))
+                return
+            }
+            pendingRecipeEdit = proposal
+        }
+        if let proposal = reply.createProposal {
+            pendingRecipeCreate = proposal
+        }
+    }
+
+    private func apply(_ proposal: RecipeEditProposal) {
+        pendingRecipeEdit = nil
+        guard let recipe = cookbook.first(where: { $0.id == proposal.recipeID }) else { return }
+        let updated = proposal.applying(to: recipe)
+        onSaveRecipe(updated)
+        messages.append(ChatMessage(role: "assistant", content: "Done — I updated **\(updated.title.isEmpty ? "the recipe" : updated.title)**."))
+        saveConversation()
+    }
+
+    private func decline(_ proposal: RecipeEditProposal) {
+        pendingRecipeEdit = nil
+        let name = cookbook.first(where: { $0.id == proposal.recipeID })?.title ?? "the recipe"
+        messages.append(ChatMessage(role: "assistant", content: "No problem — **\(name)** was left unchanged."))
+        saveConversation()
+    }
+
+    private func apply(_ proposal: RecipeCreateProposal) {
+        pendingRecipeCreate = nil
+        var recipe = proposal.recipe()
+        if let folderID = recipe.folderID, !folders.contains(where: { $0.id == folderID }) {
+            recipe.folderID = nil
+        }
+        onSaveRecipe(recipe)
+        messages.append(ChatMessage(role: "assistant", content: "Done — I added **\(recipe.title.isEmpty ? "the new recipe" : recipe.title)** to your cookbook."))
+        saveConversation()
+    }
+
+    private func decline(_ proposal: RecipeCreateProposal) {
+        pendingRecipeCreate = nil
+        messages.append(ChatMessage(role: "assistant", content: "No problem — **\(proposal.title)** was not added."))
+        saveConversation()
+    }
+
     private var selectedModel: GroqModel { GroqModel(rawValue: selectedModelRaw) ?? .gptOSS120B }
+
+    private var keyStorageDescription: String {
+#if os(macOS) || targetEnvironment(macCatalyst)
+        "Key stored in CookOut's private app storage"
+#else
+        "Key stored in this device's Keychain"
+#endif
+    }
 }
 
 private struct ChatBubble: View {

@@ -26,10 +26,14 @@ enum AppPalette: String, CaseIterable, Identifiable {
     var accent: Color { colors[0] }
     var gradient: LinearGradient { LinearGradient(colors: colors, startPoint: .leading, endPoint: .trailing) }
     func background(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(red: 0.075, green: 0.075, blue: 0.09) : Color(red: 0.98, green: 0.97, blue: 0.95)
+        scheme == .dark ? CookOutTheme.graphene : Color(red: 0.98, green: 0.97, blue: 0.95)
     }
     var softGradient: LinearGradient {
         LinearGradient(colors: [colors[0].opacity(0.14), colors.last!.opacity(0.07), .clear], startPoint: .top, endPoint: .bottom)
+    }
+    func ambientGradient(for scheme: ColorScheme) -> LinearGradient {
+        let strength = scheme == .dark ? 0.022 : 0.10
+        return LinearGradient(colors: [colors[0].opacity(strength), colors.last!.opacity(strength * 0.45), .clear], startPoint: .top, endPoint: .bottom)
     }
 }
 
@@ -42,6 +46,8 @@ extension EnvironmentValues {
 }
 
 enum CookOutTheme {
+    static let graphene = Color(red: 0.003, green: 0.004, blue: 0.007)
+    static let grapheneRaised = Color(red: 0.026, green: 0.029, blue: 0.040)
     static let orange = Color(red: 1.0, green: 0.45, blue: 0.12)
     static let coral = Color(red: 0.98, green: 0.29, blue: 0.32)
     static let mango = Color(red: 1.0, green: 0.72, blue: 0.18)
@@ -54,6 +60,20 @@ enum CookOutTheme {
         endPoint: .trailing
     )
     static let softBackground = LinearGradient(colors: [orange.opacity(0.10), berry.opacity(0.05), Color.clear], startPoint: .top, endPoint: .bottom)
+}
+
+extension FolderColor {
+    var tint: Color {
+        switch self {
+        case .coral: CookOutTheme.coral
+        case .orange: CookOutTheme.orange
+        case .mango: CookOutTheme.mango
+        case .mint: CookOutTheme.mint
+        case .cyan: .cyan
+        case .berry: CookOutTheme.berry
+        case .indigo: .indigo
+        }
+    }
 }
 
 extension MealType {

@@ -3,7 +3,7 @@ import SwiftUI
 struct AppearanceSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
-    @AppStorage("cookout.appearance") private var appearanceRaw = AppAppearance.system.rawValue
+    @AppStorage("cookout.appearance.v2") private var appearanceRaw = AppAppearance.dark.rawValue
     @AppStorage("cookout.palette") private var paletteRaw = AppPalette.rainbow.rawValue
 
     private var palette: AppPalette { AppPalette(rawValue: paletteRaw) ?? .rainbow }

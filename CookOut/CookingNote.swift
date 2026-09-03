@@ -1,5 +1,26 @@
 import Foundation
 
+enum FolderColor: String, Codable, CaseIterable, Identifiable {
+    case coral, orange, mango, mint, cyan, berry, indigo
+    var id: Self { self }
+}
+
+struct RecipeFolder: Identifiable, Codable, Equatable {
+    var id: UUID
+    var name: String
+    var symbol: String
+    var color: FolderColor
+    var createdAt: Date
+
+    init(id: UUID = UUID(), name: String, symbol: String = "folder.fill", color: FolderColor = .orange, createdAt: Date = .now) {
+        self.id = id
+        self.name = name
+        self.symbol = symbol
+        self.color = color
+        self.createdAt = createdAt
+    }
+}
+
 enum MealType: String, Codable, CaseIterable, Identifiable {
     case breakfast = "Breakfast", lunch = "Lunch", dinner = "Dinner", dessert = "Dessert", snack = "Snack", drink = "Drink", other = "Other"
     var id: Self { self }
@@ -46,21 +67,23 @@ struct CookingNote: Identifiable, Codable, Equatable {
     var updatedAt: Date
     var lastCookedAt: Date?
     var cookCount: Int
+    var folderID: UUID?
 
-    init(id: UUID = UUID(), title: String = "", body: String = "", tags: [String] = [], ingredients: [String] = [], steps: [String] = [], servings: Int = 2, prepMinutes: Int = 0, cookMinutes: Int = 0, mealType: MealType = .dinner, difficulty: RecipeDifficulty = .easy, status: RecipeStatus = .idea, rating: Int = 0, isFavorite: Bool = false, isPinned: Bool = false, createdAt: Date = .now, updatedAt: Date = .now, lastCookedAt: Date? = nil, cookCount: Int = 0) {
+    init(id: UUID = UUID(), title: String = "", body: String = "", tags: [String] = [], ingredients: [String] = [], steps: [String] = [], servings: Int = 2, prepMinutes: Int = 0, cookMinutes: Int = 0, mealType: MealType = .dinner, difficulty: RecipeDifficulty = .easy, status: RecipeStatus = .idea, rating: Int = 0, isFavorite: Bool = false, isPinned: Bool = false, createdAt: Date = .now, updatedAt: Date = .now, lastCookedAt: Date? = nil, cookCount: Int = 0, folderID: UUID? = nil) {
         self.id = id; self.title = title; self.body = body; self.tags = tags
         self.ingredients = ingredients; self.steps = steps; self.servings = servings
         self.prepMinutes = prepMinutes; self.cookMinutes = cookMinutes; self.mealType = mealType
         self.difficulty = difficulty; self.status = status; self.rating = rating
         self.isFavorite = isFavorite; self.isPinned = isPinned; self.createdAt = createdAt
         self.updatedAt = updatedAt; self.lastCookedAt = lastCookedAt; self.cookCount = cookCount
+        self.folderID = folderID
     }
 
     var totalMinutes: Int { prepMinutes + cookMinutes }
 
     private enum CodingKeys: String, CodingKey {
         case id, title, body, tags, ingredients, steps, servings, prepMinutes, cookMinutes
-        case mealType, difficulty, status, rating, isFavorite, isPinned, createdAt, updatedAt, lastCookedAt, cookCount
+        case mealType, difficulty, status, rating, isFavorite, isPinned, createdAt, updatedAt, lastCookedAt, cookCount, folderID
     }
 
     init(from decoder: Decoder) throws {
@@ -84,5 +107,6 @@ struct CookingNote: Identifiable, Codable, Equatable {
         updatedAt = try values.decodeIfPresent(Date.self, forKey: .updatedAt) ?? .now
         lastCookedAt = try values.decodeIfPresent(Date.self, forKey: .lastCookedAt)
         cookCount = try values.decodeIfPresent(Int.self, forKey: .cookCount) ?? 0
+        folderID = try values.decodeIfPresent(UUID.self, forKey: .folderID)
     }
 }
