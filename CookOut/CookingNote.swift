@@ -11,13 +11,15 @@ struct RecipeFolder: Identifiable, Codable, Equatable {
     var symbol: String
     var color: FolderColor
     var createdAt: Date
+    var parentID: UUID?
 
-    init(id: UUID = UUID(), name: String, symbol: String = "folder.fill", color: FolderColor = .orange, createdAt: Date = .now) {
+    init(id: UUID = UUID(), name: String, symbol: String = "folder.fill", color: FolderColor = .orange, createdAt: Date = .now, parentID: UUID? = nil) {
         self.id = id
         self.name = name
         self.symbol = symbol
         self.color = color
         self.createdAt = createdAt
+        self.parentID = parentID
     }
 }
 
@@ -68,6 +70,11 @@ struct CookingNote: Identifiable, Codable, Equatable {
     var lastCookedAt: Date?
     var cookCount: Int
     var folderID: UUID?
+    var sourceURL: String?
+    var sourcePublisher: String?
+    var sourceYieldIsServings: Bool?
+
+    var canScaleQuantities: Bool { sourceURL == nil || sourceYieldIsServings == true }
 
     init(id: UUID = UUID(), title: String = "", body: String = "", tags: [String] = [], ingredients: [String] = [], steps: [String] = [], servings: Int = 2, prepMinutes: Int = 0, cookMinutes: Int = 0, mealType: MealType = .dinner, difficulty: RecipeDifficulty = .easy, status: RecipeStatus = .idea, rating: Int = 0, isFavorite: Bool = false, isPinned: Bool = false, createdAt: Date = .now, updatedAt: Date = .now, lastCookedAt: Date? = nil, cookCount: Int = 0, folderID: UUID? = nil) {
         self.id = id; self.title = title; self.body = body; self.tags = tags
@@ -84,6 +91,7 @@ struct CookingNote: Identifiable, Codable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case id, title, body, tags, ingredients, steps, servings, prepMinutes, cookMinutes
         case mealType, difficulty, status, rating, isFavorite, isPinned, createdAt, updatedAt, lastCookedAt, cookCount, folderID
+        case sourceURL, sourcePublisher, sourceYieldIsServings
     }
 
     init(from decoder: Decoder) throws {
@@ -108,5 +116,8 @@ struct CookingNote: Identifiable, Codable, Equatable {
         lastCookedAt = try values.decodeIfPresent(Date.self, forKey: .lastCookedAt)
         cookCount = try values.decodeIfPresent(Int.self, forKey: .cookCount) ?? 0
         folderID = try values.decodeIfPresent(UUID.self, forKey: .folderID)
+        sourceURL = try values.decodeIfPresent(String.self, forKey: .sourceURL)
+        sourcePublisher = try values.decodeIfPresent(String.self, forKey: .sourcePublisher)
+        sourceYieldIsServings = try values.decodeIfPresent(Bool.self, forKey: .sourceYieldIsServings)
     }
 }

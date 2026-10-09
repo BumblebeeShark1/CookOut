@@ -1,0 +1,81 @@
+{
+  "rawRecords": 173278,
+  "qualifiedRecords": 30190,
+  "qualifiedPublishers": {
+    "Cookie and Kate": 269,
+    "101 Cookbooks": 432,
+    "Allrecipes": 17061,
+    "Naturally Ella": 276,
+    "Jamie Oliver": 369,
+    "BBC Food": 2497,
+    "What's Gaby Cooking": 243,
+    "A Spicy Perspective": 224,
+    "BBC Good Food": 6023,
+    "Serious Eats": 64,
+    "Williams Sonoma": 2042,
+    "Smitten Kitchen": 283,
+    "Cookin Canuck": 284,
+    "Bon App\u00e9tit": 123
+  },
+  "selectedRecords": 6500,
+  "uniqueSourceURLs": 6500,
+  "mealTypes": {
+    "Lunch": 1800,
+    "Dinner": 3300,
+    "Snack": 550,
+    "Breakfast": 600,
+    "Dessert": 200,
+    "Drink": 50
+  },
+  "publishers": {
+    "Cookie and Kate": 210,
+    "101 Cookbooks": 265,
+    "Allrecipes": 3713,
+    "Naturally Ella": 179,
+    "Jamie Oliver": 59,
+    "BBC Food": 444,
+    "BBC Good Food": 986,
+    "Serious Eats": 11,
+    "A Spicy Perspective": 43,
+    "What's Gaby Cooking": 60,
+    "Williams Sonoma": 321,
+    "Cookin Canuck": 112,
+    "Smitten Kitchen": 75,
+    "Bon App\u00e9tit": 22
+  },
+  "foodGroups": {
+    "Vegetables": 5285,
+    "Whole grains": 2256,
+    "Beans & lentils": 2778,
+    "Protein foods": 5092,
+    "Fruit": 2235,
+    "Nuts & seeds": 1552,
+    "Dairy": 987
+  },
+  "cuisines": {
+    "Global & everyday": 5000,
+    "Italian": 299,
+    "Middle Eastern": 64,
+    "Mediterranean": 312,
+    "French": 84,
+    "Japanese": 96,
+    "Indian": 142,
+    "Mexican": 311,
+    "Thai": 61,
+    "Chinese": 54,
+    "American": 61,
+    "Vietnamese": 6,
+    "Korean": 10
+  },
+  "linkChecks": {
+    "200": 316,
+    "403": 216,
+    "402": 756,
+    "301": 78,
+    "unchecked": 4992,
+    "0": 142
+  },
+  "knownServings": 3955,
+  "sourceSHA256": "6e40a82e0bd83468f8020b461924d9d6cf8bdba822642c5276868104acb6d682",
+  "catalogSHA256": "5908d87ce0abc280fef232251becd9050a0091cb95540033678cc2d749e0298a"
+}

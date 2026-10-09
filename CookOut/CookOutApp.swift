@@ -12,10 +12,11 @@ import AppKit
 
 @main
 struct CookOutApp: App {
-    @AppStorage("cookout.appearance.v2") private var appearanceRaw = AppAppearance.dark.rawValue
-    @AppStorage("cookout.palette") private var paletteRaw = AppPalette.rainbow.rawValue
+    @AppStorage("cookout.appearance.v2") private var appearanceRaw = AppAppearance.light.rawValue
+    @AppStorage("cookout.palette") private var paletteRaw = AppPalette.parchment.rawValue
 
     init() {
+        _ = CookOutTypography.displayName
 #if os(macOS)
         // Loading the artwork directly keeps the Dock icon current even when
         // Launch Services has cached an older development icon.
@@ -31,9 +32,12 @@ struct CookOutApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(\.cookOutPalette, AppPalette(rawValue: paletteRaw) ?? .rainbow)
+                .environment(\.cookOutPalette, AppPalette(rawValue: paletteRaw) ?? .parchment)
                 .preferredColorScheme((AppAppearance(rawValue: appearanceRaw) ?? .system).colorScheme)
-                .dynamicTypeSize(.xLarge ... .accessibility5)
+                .font(.body)
         }
+#if os(macOS)
+        .defaultSize(width: 1120, height: 840)
+#endif
     }
 }

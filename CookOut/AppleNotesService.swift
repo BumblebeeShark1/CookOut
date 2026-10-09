@@ -75,13 +75,18 @@ struct AppleNotesService {
         }
         return notes.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
-#else
+#endif
+
     func pastedNote() throws -> AppleNoteSource {
-        guard let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+#if os(macOS)
+        let clipboardText = NSPasteboard.general.string(forType: .string)
+#else
+        let clipboardText = UIPasteboard.general.string
+#endif
+        guard let text = clipboardText?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
             throw AppleNotesImportError.noTextOnPasteboard
         }
         let firstLine = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? "Apple Notes Recipe"
         return AppleNoteSource(id: UUID().uuidString, title: firstLine, text: text, folderName: "Apple Notes")
     }
-#endif
 }

@@ -1,0 +1,13 @@
+Selected CookOut C-flame icon
+
+macOS artwork:
+Use case: logo-brand
+Asset type: CookOut app icon design, direction 1: bespoke C-flame brand mark.
+Create one exceptionally polished modern icon for CookOut, a cooking and recipe app. Center a single bold custom emblem: a broad sculpted C-shaped ribbon that curls upward into one elegant flame tip. The negative space clearly suggests a C while the outer shape reads as fire. Strong intelligent silhouette, minimal geometry, instantly readable. Warm ember-orange at the lower curve blending into golden yellow at the flame tip. Subtle soft satin dimensionality, no realistic textures. The emblem occupies 60 percent of canvas width, with generous balanced negative space. Background is a smooth deep graphite rounded-square tile occupying 88 percent of a square canvas, with continuous Apple-style corners and a genuine transparent outer margin. Tiny soft highlights only, no outer frame. Contemporary premium identity, striking but restrained. No text, full words, literal cookware, book, utensils, circles around the emblem, logos from existing brands, small decorative elements, glass reflections, neon, watermark, phone mockup, presentation board. Single finished square icon.
+
+iOS adaptation:
+Use case: precise-object-edit
+Asset type: iOS app icon adaptation of the selected CookOut C-flame.
+Preserve this exact custom orange-to-gold C-shaped flame emblem, its shape, dimensional satin shading, proportions and graphite background appearance. Produce the full-bleed SQUARE version for iOS: extend the deep graphite background all the way to every canvas edge and corner; remove the transparent exterior and rounded tile boundary. Keep the emblem centered at about 62 percent of canvas width, fully visible, with balanced margins. Entire square canvas must be completely opaque, no rounded exterior corners or surrounding padding. No border, frame, extra shapes, text, logos, watermark or mockup. One finished square image.
+
+Generated with the built-in image_gen tool. Exported to the asset catalog using Lanczos resizing.

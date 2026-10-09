@@ -1,14 +1,17 @@
 import SwiftUI
 
 struct CookingChatView: View {
+    var embedded = false
     private enum ChatTab: Hashable { case chat, history }
 
     @Environment(\.cookOutPalette) private var palette
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
     let cookbook: [CookingNote]
     let folders: [RecipeFolder]
-    let onSaveRecipe: (CookingNote) -> Void
+    var bank: [BankRecipe] = []
+    let onSaveRecipe: (CookingNote) -> Bool
     @StateObject private var historyStore = ChatHistoryStore()
     @State private var messages: [ChatMessage] = []
     @State private var activeConversationID: UUID?
@@ -26,6 +29,7 @@ struct CookingChatView: View {
     @State private var isTestingKey = false
     @State private var keyError: String?
     @FocusState private var inputFocused: Bool
+    @AppStorage("cookout.assistantFocus") private var focusRaw = CookingAssistantFocus.enhance.rawValue
     @AppStorage("cookout.groqModel") private var selectedModelRaw = GroqModel.gptOSS120B.rawValue
     private let service = GroqChatService()
 
@@ -37,7 +41,7 @@ struct CookingChatView: View {
             }
             .navigationTitle(selectedTab == .history && hasKey ? "CookAssistant History" : "CookAssistant")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                if !embedded { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
                 if hasKey {
                     ToolbarItem(placement: .primaryAction) {
                         Menu {
@@ -84,91 +88,119 @@ struct CookingChatView: View {
                 Text("\(proposal.summary)\n\n\(proposal.ingredients.count) ingredients · \(proposal.steps.count) steps")
             }
         }
+        .cookOutCanvas()
     }
 
-    private var chatTabs: some View {
-        TabView(selection: $selectedTab) {
-            conversation
-                .tabItem { Label("Chat", systemImage: "sparkles") }
-                .tag(ChatTab.chat)
+    private var focus: CookingAssistantFocus { CookingAssistantFocus(rawValue: focusRaw) ?? .enhance }
 
-            history
-                .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
-                .tag(ChatTab.history)
-        }
+    private var chatTabs: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        tabButton("Conversation", symbol: "bubble.left", value: .chat)
+                        tabButton("History", symbol: "clock", value: .history)
+                    }
+                }
+                Button { startNewConversation() } label: { Image(systemName: "plus").frame(width: 32, height: 40) }
+                    .buttonStyle(.borderless).accessibilityLabel("New conversation")
+            }.padding(.horizontal, 28).padding(.vertical, 18)
+            Picker("Cooking focus", selection: $focusRaw) {
+                ForEach(CookingAssistantFocus.allCases) { Text($0.rawValue).tag($0.rawValue) }
+            }.pickerStyle(.segmented).padding(.horizontal, 28).padding(.bottom, 14)
+            Divider()
+            if selectedTab == .chat { conversation } else { history }
+        }.animation(CookOutTheme.motion(reduceMotion: reduceMotion), value: selectedTab)
+    }
+
+    private func tabButton(_ title: String, symbol: String, value: ChatTab) -> some View {
+        Button { selectedTab = value } label: {
+            Label(title, systemImage: symbol).font(.subheadline.weight(.medium))
+                .padding(.horizontal, 16).padding(.vertical, 11)
+                .foregroundStyle(selectedTab == value ? Color.white : .primary)
+                .background(selectedTab == value ? palette.accent : Color.primary.opacity(0.04), in: Capsule())
+        }.buttonStyle(CookOutPressStyle()).accessibilityAddTraits(selectedTab == value ? .isSelected : [])
     }
 
     private var keySetup: some View {
-        ZStack {
-            ZStack { palette.background(for: colorScheme); palette.ambientGradient(for: colorScheme) }.ignoresSafeArea()
-            VStack(spacing: 22) {
-                ZStack {
-                    Circle().fill(palette.gradient).frame(width: 96, height: 96)
-                    Image(systemName: "chef.hat.fill").font(.system(size: 42)).foregroundStyle(.white)
+        CookOutScreen {
+            CookOutPageHeader(eyebrow: "Meet your sous-chef", title: "A little help.\nA lot of possibilities.",
+                              subtitle: "Find tonight’s dinner, breathe new life into a favorite, or get a second opinion at the stove.")
+            CookOutPanel(title: "CookAssistant", subtitle: "Good ideas belong in your kitchen.", symbol: "sparkles") {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 22)], alignment: .leading, spacing: 24) {
+                    assistantBenefit("lightbulb", "Find your next favorite", "Meal ideas for your mood, ingredients, and time.")
+                    assistantBenefit("arrow.triangle.swap", "Make it work", "Thoughtful substitutions and practical technique advice.")
+                    assistantBenefit("book.closed", "Build your cookbook", "Create recipes and refine the ones you already love.")
                 }
-                VStack(spacing: 8) {
-                    Text("Meet CookAssistant").font(.largeTitle.bold())
-                    Text("Recipe ideas, substitutions, troubleshooting, and meal inspiration—right in your cookbook.")
-                        .multilineTextAlignment(.center).foregroundStyle(.secondary)
-                }
-                VStack(alignment: .leading, spacing: 12) {
-                    setupBenefit("sparkles", "Creative cooking help")
-                    setupBenefit("book.closed.fill", "Understands your saved recipes")
-                    setupBenefit("lock.shield.fill", keyStorageDescription)
+                Divider()
+                HStack {
+                    Label("Powered by \(selectedModel.name) via Groq", systemImage: "sparkles").font(.caption).foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
                 }
                 Button { keyError = nil; showingKeySettings = true } label: {
-                    Label("Connect CookAssistant", systemImage: "bolt.fill").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 6)
-                }.buttonStyle(.borderedProminent).tint(palette.accent)
-                Text("Powered by GPT-OSS 120B").font(.caption).foregroundStyle(.tertiary)
-            }.padding(28)
+                    Label("Connect CookAssistant", systemImage: "arrow.right").padding(.vertical, 5)
+                }.buttonStyle(.borderedProminent).controlSize(.large)
+            }
+            Label(keyStorageDescription, systemImage: "lock").font(.caption).foregroundStyle(.secondary)
         }
+    }
+
+    private func assistantBenefit(_ symbol: String, _ title: String, _ subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: symbol).font(.system(size: 26, weight: .light)).foregroundStyle(.secondary)
+            Text(title).font(CookOutTypography.display(23, relativeTo: .title3))
+            Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var conversation: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Circle().fill(.green).frame(width: 8, height: 8)
-                Image(systemName: selectedModel.symbol).foregroundStyle(palette.accent)
-                Text(selectedModel.name).font(.caption.weight(.semibold))
-                Text("• CookAssistant via Groq").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-            }.padding(.horizontal).padding(.vertical, 8).background(CookOutTheme.mint.opacity(0.10))
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(spacing: 14) {
+                    LazyVStack(alignment: .leading, spacing: 24) {
                         if messages.isEmpty {
-                            VStack(spacing: 12) {
-                                Image(systemName: "chef.hat.fill").font(.system(size: 46)).foregroundStyle(CookOutTheme.orange)
-                                Text("What are we cooking?").font(.title2.bold())
-                                Text("Ask about a recipe, substitution, technique, what to cook, or tell CookAssistant to add a new recipe.").multilineTextAlignment(.center).foregroundStyle(.secondary)
-                                promptChips
-                            }.padding(.top, 48)
+                            CookOutPageHeader(eyebrow: "Your sous-chef", title: "What sounds good today?", subtitle: "Bring a question, an ingredient, or a little curiosity. We’ll take it from there.")
+                                .padding(.top, 24)
+                            promptChips.padding(.vertical, 12)
                         }
                         ForEach(messages) { message in ChatBubble(message: message).id(message.id) }
-                        if isSending { HStack { ProgressView(); Text("\(selectedModel.name) is cooking up an answer…") }.foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading) }
-                        if let errorMessage {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Label("That didn't cook properly", systemImage: "exclamationmark.triangle.fill").font(.subheadline.bold())
-                                Text(errorMessage).font(.footnote)
-                                Button("Try again", systemImage: "arrow.clockwise") { retryLastRequest() }.font(.footnote.bold())
-                            }.foregroundStyle(.red).padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                                .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                        if isSending {
+                            HStack(spacing: 12) { ProgressView().controlSize(.small); Text("A little food for thought…").font(.subheadline) }
+                                .foregroundStyle(.secondary).padding(.vertical, 8)
                         }
-                    }.padding()
+                        if let errorMessage {
+                            CookOutPanel(title: "Let’s try that again.", symbol: "exclamationmark.circle") {
+                                Text(errorMessage).font(.subheadline).foregroundStyle(.secondary)
+                                Button("Try again", systemImage: "arrow.clockwise") { retryLastRequest() }.buttonStyle(.bordered)
+                            }
+                        }
+                    }.padding(28).frame(maxWidth: 920).frame(maxWidth: .infinity)
                 }
                 .scrollDismissesKeyboard(.interactively)
-                .onChange(of: messages.count) { _, _ in if let id = messages.last?.id { withAnimation { proxy.scrollTo(id, anchor: .bottom) } } }
+                .onChange(of: messages.count) { _, _ in
+                    if let id = messages.last?.id {
+                        withAnimation(CookOutTheme.motion(reduceMotion: reduceMotion)) { proxy.scrollTo(id, anchor: .bottom) }
+                    }
+                }
             }
-            HStack(alignment: .bottom, spacing: 10) {
-                TextField("Ask your cooking question…", text: $input, axis: .vertical)
-                    .lineLimit(1...5).focused($inputFocused).submitLabel(.send).onSubmit { send() }
-                Button { send() } label: { Image(systemName: "arrow.up.circle.fill").font(.title).foregroundStyle(CookOutTheme.hero) }
-                    .disabled(isSending || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-            .padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
-            .padding(.horizontal).padding(.bottom, 8)
-        }
-        .background { ZStack { palette.background(for: colorScheme); palette.ambientGradient(for: colorScheme) } }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .bottom, spacing: 16) {
+                    TextField("An idea, an ingredient, a question…", text: $input, axis: .vertical)
+                        .textFieldStyle(.plain).lineLimit(1...5).focused($inputFocused).submitLabel(.send).onSubmit { send() }
+                    Button { send() } label: {
+                        Image(systemName: "arrow.up").font(.headline).foregroundStyle(.white)
+                            .frame(width: 40, height: 40).background(palette.accent, in: RoundedRectangle(cornerRadius: 12))
+                    }.buttonStyle(CookOutPressStyle()).accessibilityLabel("Send message")
+                        .disabled(isSending || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .opacity(isSending || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.4 : 1)
+                }.padding(16)
+                    .background(CookOutTheme.surface(for: colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                    .overlay { RoundedRectangle(cornerRadius: 20).stroke(CookOutTheme.border(for: colorScheme)) }
+                Text("\(selectedModel.name) via Groq")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }.padding(.horizontal, 28).padding(.bottom, 18).padding(.top, 12)
+                .frame(maxWidth: 920).frame(maxWidth: .infinity)
+        }.cookOutCanvas()
     }
 
     private var filteredHistory: [ChatConversation] {
@@ -181,102 +213,81 @@ struct CookingChatView: View {
     }
 
     private var history: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
+        CookOutScreen {
+            CookOutPageHeader(eyebrow: "Ideas worth coming back to", title: "Your kitchen conversations.", subtitle: "Pick up an old idea or return to advice you found helpful.")
+            HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search conversations", text: $historyQuery)
-                    .textFieldStyle(.plain)
+                TextField("Find a conversation", text: $historyQuery).textFieldStyle(.plain)
                 if !historyQuery.isEmpty {
-                    Button { historyQuery = "" } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                    }.buttonStyle(.plain)
+                    Button { historyQuery = "" } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.plain)
                 }
-            }
-            .padding(12)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-            .padding()
-
+            }.cookOutField()
             if filteredHistory.isEmpty {
-                ContentUnavailableView(
-                    historyStore.conversations.isEmpty ? "No conversations yet" : "No matching conversations",
-                    systemImage: historyStore.conversations.isEmpty ? "bubble.left.and.bubble.right" : "magnifyingglass",
-                    description: Text(historyStore.conversations.isEmpty ? "Your CookAssistant chats will be saved here automatically." : "Try a different search.")
-                )
+                CookOutEmptyState(symbol: "bubble.left.and.bubble.right", title: historyStore.conversations.isEmpty ? "Good ideas start with a question." : "No matching conversations.",
+                                  message: historyStore.conversations.isEmpty ? "Your conversations will be collected here automatically." : "Try another word or phrase.")
             } else {
-                List {
+                LazyVStack(spacing: 14) {
                     ForEach(filteredHistory) { conversation in
                         Button { open(conversation) } label: {
-                            VStack(alignment: .leading, spacing: 7) {
-                                HStack {
-                                    Text(conversation.title).font(.headline).lineLimit(1)
-                                    Spacer()
-                                    Text(conversation.updatedAt, format: .relative(presentation: .named))
-                                        .font(.caption).foregroundStyle(.secondary)
+                            CookOutPanel(title: "") {
+                                HStack(alignment: .top) {
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        Text(conversation.title).font(CookOutTypography.display(25, relativeTo: .title2)).foregroundStyle(.primary).lineLimit(2)
+                                        Text(conversation.preview).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                                        Text(conversation.updatedAt, format: .dateTime.month(.abbreviated).day())
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer(minLength: 10)
+                                    Image(systemName: "arrow.up.right").foregroundStyle(.secondary)
                                 }
-                                Text(conversation.preview)
-                                    .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-                                Label(GroqModel(rawValue: conversation.modelRawValue)?.name ?? "CookAssistant", systemImage: "brain.head.profile")
-                                    .font(.caption2).foregroundStyle(palette.accent)
                             }
-                            .padding(.vertical, 5)
-                        }
-                        .buttonStyle(.plain)
-                        .swipeActions {
-                            Button("Delete", systemImage: "trash", role: .destructive) {
-                                delete(conversation)
+                        }.buttonStyle(CookOutPressStyle())
+                            .contextMenu {
+                                Button("Open", systemImage: "bubble.left") { open(conversation) }
+                                Button("Delete", systemImage: "trash", role: .destructive) { delete(conversation) }
                             }
-                        }
-                        .contextMenu {
-                            Button("Open", systemImage: "bubble.left") { open(conversation) }
-                            Button("Delete", systemImage: "trash", role: .destructive) { delete(conversation) }
-                        }
                     }
                 }
-                .listStyle(.plain)
-
-                Button("Delete All History", systemImage: "trash", role: .destructive) {
-                    showingClearHistoryConfirmation = true
-                }
-                .font(.footnote).padding(.bottom, 8)
+                Button("Delete all history", systemImage: "trash", role: .destructive) { showingClearHistoryConfirmation = true }
+                    .font(.caption).buttonStyle(.borderless)
             }
         }
-        .background { ZStack { palette.background(for: colorScheme); palette.ambientGradient(for: colorScheme) } }
     }
 
     private var promptChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                quickPrompt("clock.fill", "30-minute meal", CookOutTheme.orange, "What can I cook in 30 minutes?")
+                quickPrompt("lightbulb", "Brainstorm dinner", CookOutTheme.orange, "Brainstorm six varied, balanced dinners with vegetables, satisfying carbohydrates, and protein. No restrictive diet. Include flavor, effort, and one useful variation for each.")
                 quickPrompt("wand.and.sparkles", "Improve a recipe", CookOutTheme.berry, "Help me improve one of my recipes")
-                quickPrompt("plus.circle.fill", "Add a recipe", CookOutTheme.coral, "Create and add a new recipe to my cookbook")
+                quickPrompt("calendar", "Plan my week", CookOutTheme.coral, "Help me brainstorm a varied week of nourishing everyday meals. Ask only for essential household, ingredient exclusion, and time details. Include pantry reuse and a prep outline; no keto or weight-loss targets.")
                 quickPrompt("arrow.triangle.swap", "Substitution", CookOutTheme.mint, "Suggest a smart substitution")
             }
         }.contentMargins(.horizontal, 2)
     }
 
-    private func setupBenefit(_ symbol: String, _ text: String) -> some View {
-        Label(text, systemImage: symbol).font(.subheadline.weight(.medium)).foregroundStyle(.primary)
-    }
-
     private func quickPrompt(_ symbol: String, _ title: String, _ color: Color, _ prompt: String) -> some View {
         Button { input = prompt; send() } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: symbol).font(.title3).foregroundStyle(color)
-                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-            }.frame(width: 130, alignment: .leading).padding(12)
-                .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
-        }.buttonStyle(.plain)
+            VStack(alignment: .leading, spacing: 16) {
+                Image(systemName: symbol).font(.system(size: 24, weight: .light)).foregroundStyle(color)
+                Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.primary)
+                Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
+            }.frame(width: 150, alignment: .leading).padding(20)
+                .background(CookOutTheme.surface(for: colorScheme), in: RoundedRectangle(cornerRadius: 18))
+                .overlay { RoundedRectangle(cornerRadius: 18).stroke(CookOutTheme.border(for: colorScheme)) }
+        }.buttonStyle(CookOutPressStyle())
     }
 
     private var keyEditor: some View {
         NavigationStack {
-            Form {
-                Section("CookAssistant connection") {
-                    SecureField("gsk_…", text: $keyInput).textContentType(.password)
+            CookOutScreen {
+                CookOutPageHeader(eyebrow: "A secure connection", title: "Invite your sous-chef in.", subtitle: "Connect your Groq account to bring CookAssistant into your kitchen.")
+                CookOutPanel(title: "Your Groq API key", subtitle: keyStorageDescription, symbol: "key") {
+                    SecureField("gsk_…", text: $keyInput).textContentType(.password).cookOutField()
+                    if isTestingKey { HStack { ProgressView(); Text("Checking your connection…").font(.subheadline) } }
+                    if let keyError { Label(keyError, systemImage: "exclamationmark.circle").foregroundStyle(.red).font(.subheadline) }
+                    Text("Your questions and cookbook context are sent to Groq when you chat. Recipe changes are reviewed before they’re saved.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
-                if isTestingKey { Section { HStack { ProgressView(); Text("Testing secure connection…") } } }
-                if let keyError { Section { Text(keyError).foregroundStyle(.red) } }
-                Section { Text("For production, route requests through your own server so no distributable app contains a reusable provider credential.").font(.footnote) }
             }
             .navigationTitle("Secure Connection")
             .toolbar {
@@ -287,6 +298,7 @@ struct CookingChatView: View {
                 }
             }
         }
+        .cookOutSheetFrame(width: 640, height: 560)
     }
 
     private var normalizedKeyInput: String { GroqKeychain.normalized(keyInput) }
@@ -315,7 +327,7 @@ struct CookingChatView: View {
         isSending = true
         Task {
             do {
-                handle(try await service.reply(to: messages, cookbook: cookbook, folders: folders, model: selectedModel))
+                handle(try await service.reply(to: messages, cookbook: cookbook, folders: folders, model: selectedModel, focus: focus, bank: bank))
                 saveConversation()
             }
             catch { errorMessage = error.localizedDescription }
@@ -328,7 +340,7 @@ struct CookingChatView: View {
         errorMessage = nil; isSending = true
         Task {
             do {
-                handle(try await service.reply(to: messages, cookbook: cookbook, folders: folders, model: selectedModel))
+                handle(try await service.reply(to: messages, cookbook: cookbook, folders: folders, model: selectedModel, focus: focus, bank: bank))
                 saveConversation()
             }
             catch { errorMessage = error.localizedDescription }
@@ -389,10 +401,10 @@ struct CookingChatView: View {
     }
 
     private func apply(_ proposal: RecipeEditProposal) {
-        pendingRecipeEdit = nil
         guard let recipe = cookbook.first(where: { $0.id == proposal.recipeID }) else { return }
         let updated = proposal.applying(to: recipe)
-        onSaveRecipe(updated)
+        guard onSaveRecipe(updated) else { return }
+        pendingRecipeEdit = nil
         messages.append(ChatMessage(role: "assistant", content: "Done — I updated **\(updated.title.isEmpty ? "the recipe" : updated.title)**."))
         saveConversation()
     }
@@ -405,12 +417,12 @@ struct CookingChatView: View {
     }
 
     private func apply(_ proposal: RecipeCreateProposal) {
-        pendingRecipeCreate = nil
         var recipe = proposal.recipe()
         if let folderID = recipe.folderID, !folders.contains(where: { $0.id == folderID }) {
             recipe.folderID = nil
         }
-        onSaveRecipe(recipe)
+        guard onSaveRecipe(recipe) else { return }
+        pendingRecipeCreate = nil
         messages.append(ChatMessage(role: "assistant", content: "Done — I added **\(recipe.title.isEmpty ? "the new recipe" : recipe.title)** to your cookbook."))
         saveConversation()
     }
@@ -433,12 +445,18 @@ struct CookingChatView: View {
 }
 
 private struct ChatBubble: View {
+    @Environment(\.colorScheme) private var colorScheme
     let message: ChatMessage
     var body: some View {
-        HStack {
-            if message.role == "user" { Spacer(minLength: 50) }
-            Text(markdown).textSelection(.enabled).padding(12)
-                .background(message.role == "user" ? CookOutTheme.orange : Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+        HStack(alignment: .top) {
+            if message.role == "user" { Spacer(minLength: 35) }
+            VStack(alignment: .leading, spacing: 12) {
+                Label(message.role == "user" ? "You" : "CookAssistant", systemImage: message.role == "user" ? "person" : "sparkles")
+                    .font(.caption.weight(.medium)).opacity(0.75)
+                Text(markdown).font(.body).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+            }.padding(22)
+                .background(message.role == "user" ? CookOutTheme.olive : CookOutTheme.surface(for: colorScheme), in: RoundedRectangle(cornerRadius: 20))
+                .overlay { RoundedRectangle(cornerRadius: 20).stroke(CookOutTheme.border(for: colorScheme)) }
                 .foregroundStyle(message.role == "user" ? .white : .primary)
             if message.role != "user" { Spacer(minLength: 35) }
         }

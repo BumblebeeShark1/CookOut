@@ -5,7 +5,7 @@ struct AppleNotesImportView: View {
     @Environment(\.cookOutPalette) private var palette
     @Environment(\.colorScheme) private var colorScheme
     let folders: [RecipeFolder]
-    let onImport: (CookingNote) -> Void
+    let onImport: (CookingNote) -> Bool
 
     @State private var sources: [AppleNoteSource] = []
     @State private var selectedSource: AppleNoteSource?
@@ -57,95 +57,77 @@ struct AppleNotesImportView: View {
     }
 
     private var keySetup: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "note.text.badge.plus")
-                .font(.system(size: 54))
-                .foregroundStyle(palette.gradient)
-            Text("Connect CookAssistant to organize your note")
-                .font(.title.bold())
-                .multilineTextAlignment(.center)
-            Text("CookAssistant turns the note into a recipe with ingredients, directions, timing, tags, and the best matching folder.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 500)
-            SecureField("Groq API key (gsk_…)", text: $keyInput)
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 440)
-            Button("Save Key and Continue", systemImage: "key.fill") {
-                saveKey()
+        CookOutScreen {
+            CookOutPageHeader(eyebrow: "From notes to the table", title: "Keep the recipe.\nLeave the clutter.", subtitle: "Bring a favorite from Apple Notes. CookAssistant will turn it into ingredients, directions, and all the little details.")
+            CookOutPanel(title: "Connect CookAssistant", subtitle: "Use your Groq API key to organize an imported note.", symbol: "sparkles") {
+                SecureField("Groq API key (gsk_…)", text: $keyInput).cookOutField()
+                Button("Save key & continue", systemImage: "arrow.right") { saveKey() }
+                    .buttonStyle(.borderedProminent).controlSize(.large).disabled(!isValidKey)
+                Text("Your key stays in CookOut’s private local storage. Only the selected recipe text is sent to Groq to organize.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(!isValidKey)
-            Text("Your key stays in CookOut’s private local storage.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
         }
-        .padding(32)
     }
 
     @ViewBuilder private var sourcePicker: some View {
+        CookOutScreen {
+            CookOutPageHeader(eyebrow: "01 · Choose a note", title: "A favorite, ready for a new home.", subtitle: "Choose one recipe to organize. You’ll review the result before it joins your cookbook.")
+            CookOutPanel(title: "Bring it along", symbol: "note.text") {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) { sourceActions }
+                    VStack(alignment: .leading, spacing: 12) { sourceActions }
+                }.controlSize(.large)
+                if isLoadingNotes { HStack { ProgressView(); Text("Gathering your notes…").font(.subheadline) } }
+                Text("Only the note you select is sent to Groq for organizing.").font(.caption).foregroundStyle(.secondary)
+            }
 #if os(macOS)
-        VStack(spacing: 0) {
             if sources.isEmpty {
-                ContentUnavailableView {
-                    Label("Choose a recipe note", systemImage: "note.text")
-                } description: {
-                    Text("CookOut will ask macOS for permission to read Apple Notes, then CookAssistant will organize the note you select.")
-                } actions: {
-                    Button("Load Apple Notes", systemImage: "square.and.arrow.down") { loadAppleNotes() }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                    if isLoadingNotes { ProgressView("Reading notes…") }
-                }
+                CookOutEmptyState(symbol: "doc.on.clipboard", title: "There’s a recipe in there somewhere.", message: "Load your Apple Notes or paste the recipe you’ve copied.")
             } else {
-                List(filteredSources, selection: Binding(get: { selectedSource?.id }, set: { id in selectedSource = sources.first { $0.id == id } })) { source in
-                    Button { selectedSource = source } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: selectedSource?.id == source.id ? "checkmark.circle.fill" : "note.text")
-                                .font(.title2)
-                                .foregroundStyle(selectedSource?.id == source.id ? palette.accent : .secondary)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(source.title).font(.headline).foregroundStyle(.primary).lineLimit(1)
-                                Text(source.text.replacingOccurrences(of: "\n", with: " "))
-                                    .font(.body).foregroundStyle(.secondary).lineLimit(2)
-                                Label(source.folderName, systemImage: "folder")
-                                    .font(.footnote).foregroundStyle(.tertiary)
+                HStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                    TextField("Find a note", text: $search).textFieldStyle(.plain)
+                }.cookOutField()
+                LazyVStack(spacing: 14) {
+                    ForEach(filteredSources) { source in
+                        Button { selectedSource = source } label: {
+                            CookOutPanel(title: "") {
+                                HStack(alignment: .top, spacing: 18) {
+                                    Image(systemName: selectedSource?.id == source.id ? "checkmark.circle.fill" : "circle")
+                                        .font(.title2).foregroundStyle(selectedSource?.id == source.id ? palette.accent : .secondary)
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        Text(source.title).font(CookOutTypography.display(25, relativeTo: .title2)).foregroundStyle(.primary).lineLimit(2)
+                                        Text(source.text.replacingOccurrences(of: "\n", with: " ")).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                                        Label(source.folderName, systemImage: "folder").font(.caption).foregroundStyle(.secondary)
+                                    }.frame(maxWidth: .infinity, alignment: .leading)
+                                }
                             }
-                        }
-                        .padding(.vertical, 5)
+                        }.buttonStyle(CookOutPressStyle()).accessibilityAddTraits(selectedSource?.id == source.id ? .isSelected : [])
                     }
-                    .buttonStyle(.plain)
                 }
-                .searchable(text: $search, prompt: "Search Apple Notes")
+                if filteredSources.isEmpty { Text("No notes match your search.").foregroundStyle(.secondary) }
                 importBar
             }
-        }
 #else
-        VStack(spacing: 22) {
-            ContentUnavailableView {
-                Label(selectedSource == nil ? "Copy a recipe from Notes" : "Recipe note ready", systemImage: selectedSource == nil ? "doc.on.clipboard" : "checkmark.circle.fill")
-            } description: {
-                Text(selectedSource == nil ? "In Apple Notes, select and copy the recipe text. Then return here and paste it for CookAssistant to organize." : (selectedSource?.title ?? "Apple Notes Recipe"))
-            } actions: {
-                Button("Paste from Apple Notes", systemImage: "doc.on.clipboard.fill") { pasteAppleNote() }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-            }
             if let selectedSource {
-                Text(selectedSource.text)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(10)
-                    .padding()
-                    .frame(maxWidth: 620, alignment: .leading)
-                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 16))
-                importButton
+                CookOutPanel(title: selectedSource.title, subtitle: "Copied from Apple Notes", symbol: "note.text") {
+                    Text(selectedSource.text).font(.body).foregroundStyle(.secondary).lineLimit(12)
+                    importButton
+                }
+            } else {
+                CookOutEmptyState(symbol: "doc.on.clipboard", title: "Copy a little inspiration.", message: "In Apple Notes, copy the recipe text. Return here and paste it to begin.")
             }
-        }
-        .padding(28)
 #endif
+        }
+    }
+
+    @ViewBuilder private var sourceActions: some View {
+#if os(macOS)
+        Button("Load Apple Notes", systemImage: "square.and.arrow.down") { loadAppleNotes() }
+            .buttonStyle(.borderedProminent).disabled(isLoadingNotes)
+#endif
+        Button("Paste a copied recipe", systemImage: "doc.on.clipboard") { pasteAppleNote() }
+            .buttonStyle(.bordered)
     }
 
 #if os(macOS)
@@ -160,19 +142,15 @@ struct AppleNotesImportView: View {
     }
 
     private var importBar: some View {
-        HStack {
-            Text(selectedSource.map { "Selected: \($0.title)" } ?? "Select one note")
-                .font(.body.weight(.medium))
-                .foregroundStyle(selectedSource == nil ? .secondary : .primary)
-                .lineLimit(1)
-            Spacer()
-            Button("Reload", systemImage: "arrow.clockwise") { loadAppleNotes() }
-                .buttonStyle(.bordered)
-            importButton
+        CookOutPanel(title: "") {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(selectedSource.map { "Ready to organize: \($0.title)" } ?? "Choose a note above to continue.")
+                    .font(.subheadline.weight(.medium)).lineLimit(2)
+                importButton
+            }
         }
-        .padding()
-        .background(.regularMaterial)
     }
+
 #endif
 
     private var importButton: some View {
@@ -190,53 +168,45 @@ struct AppleNotesImportView: View {
     }
 
     private func recipePreview(_ proposal: RecipeCreateProposal) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Label("CookAssistant organized your note", systemImage: "checkmark.seal.fill")
-                    .font(.title2.bold())
-                    .foregroundStyle(CookOutTheme.mint)
-                Text(proposal.summary).font(.body).foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(proposal.title).font(.title.bold())
-                    HStack(spacing: 14) {
-                        Label("\(proposal.ingredients.count) ingredients", systemImage: "basket.fill")
-                        Label("\(proposal.steps.count) steps", systemImage: "list.number")
-                        Label(proposal.mealType ?? MealType.other.rawValue, systemImage: "fork.knife")
+        CookOutScreen {
+            CookOutPageHeader(eyebrow: "02 · Make it yours", title: proposal.title, subtitle: proposal.summary)
+            HStack(spacing: 18) {
+                Label("\(proposal.ingredients.count) ingredients", systemImage: "basket")
+                Label("\(proposal.steps.count) steps", systemImage: "list.number")
+            }.font(.subheadline).foregroundStyle(.secondary)
+            CookOutPanel(title: "Ingredients", symbol: "basket") {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(proposal.ingredients, id: \.self) { ingredient in
+                        HStack(alignment: .top, spacing: 12) {
+                            Circle().fill(Color.secondary.opacity(0.5)).frame(width: 5, height: 5).padding(.top, 8)
+                            Text(ingredient)
+                        }
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    Divider()
-                    Text("Ingredients").font(.title3.bold())
-                    ForEach(proposal.ingredients, id: \.self) { Text("• \($0)").font(.body) }
-                    Text("Directions").font(.title3.bold()).padding(.top, 4)
+                }
+            }
+            CookOutPanel(title: "Directions", symbol: "list.number") {
+                VStack(alignment: .leading, spacing: 20) {
                     ForEach(Array(proposal.steps.enumerated()), id: \.offset) { index, step in
-                        Text("\(index + 1). \(step)").font(.body)
+                        HStack(alignment: .top, spacing: 14) {
+                            Text("\(index + 1)").font(.caption.weight(.medium)).frame(width: 28, height: 28)
+                                .background(Color.primary.opacity(0.05), in: Circle())
+                            Text(step).frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                 }
-                .padding(20)
-                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 20))
-
-                Picker("Save to Folder", selection: $destinationFolderID) {
+            }
+            CookOutPanel(title: "Give it a home", subtitle: "Pick a collection, or keep it in your library.", symbol: "folder") {
+                Picker("Collection", selection: $destinationFolderID) {
                     Label("Unfiled", systemImage: "tray").tag(UUID?.none)
-                    ForEach(folders) { folder in
-                        Label(folder.name, systemImage: folder.symbol).tag(Optional(folder.id))
-                    }
+                    ForEach(folders) { folder in Label(RecipeFolders.path(for: folder.id, in: folders), systemImage: folder.symbol).tag(Optional(folder.id)) }
                 }
-                .font(.body)
-
-                Button("Add Recipe to CookOut", systemImage: "plus.circle.fill") {
+                Button("Add to my cookbook", systemImage: "plus") {
                     var recipe = proposal.recipe()
                     recipe.folderID = destinationFolderID
-                    onImport(recipe)
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity)
+                    if onImport(recipe) { dismiss() }
+                    else { errorMessage = "The recipe could not be saved. Your import is still here. Check library storage access and try again." }
+                }.buttonStyle(.borderedProminent).controlSize(.large)
             }
-            .frame(maxWidth: 760, alignment: .leading)
-            .padding(24)
-            .frame(maxWidth: .infinity)
         }
     }
 
@@ -272,15 +242,17 @@ struct AppleNotesImportView: View {
             isLoadingNotes = false
         }
     }
-#else
+#endif
+
     private func pasteAppleNote() {
         do {
-            selectedSource = try notesService.pastedNote()
+            let source = try notesService.pastedNote()
+            sources = [source]
+            selectedSource = source
         } catch {
             errorMessage = error.localizedDescription
         }
     }
-#endif
 
     private func organizeSelectedNote() {
         guard let selectedSource, !isOrganizing else { return }
